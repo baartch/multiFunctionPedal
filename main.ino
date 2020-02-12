@@ -5,18 +5,53 @@
 #include <gfxfont.h>
 
 
-// Adafruit SSD1306 - Version: 2.1.0
+// Adafruit SSD1306 - Version: Latest
 #include <Adafruit_SSD1306.h>
 #include <splash.h>
 
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma region DISPLAY
+// DISPLAY 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 
 #define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-  
+#pragma endregion
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma region TUNER
+// TUNER 
+//clipping indicator variables
+boolean clipping = 0;
+
+//data storage variables
+byte newData = 0;
+byte prevData = 0;
+unsigned int time = 0;//keeps time and sends vales to store in timer[] occasionally
+int timer[10];//storage for timing of events
+int slope[10];//storage for slope of events
+unsigned int totalTimer;//used to calculate period
+unsigned int period;//storage for period of wave
+byte index = 0;//current storage index
+float frequency;//storage for frequency calculations
+int maxSlope = 0;//used to calculate max slope as trigger point
+int newSlope;//storage for incoming slope data
+
+//variables for decided whether you have a match
+byte noMatch = 0;//counts how many non-matches you've received to reset variables if it's been too long
+byte slopeTol = 3;//slope tolerance- adjust this if you need
+int timerTol = 10;//timer tolerance- adjust this if you need
+
+//variables for amp detection
+unsigned int ampTimer = 0;
+byte maxAmp = 0;
+byte checkMaxAmp;
+byte ampThreshold = 30;//raise if you have a very noisy signal
+#pragma endregion
+
+
 void setup()
 {
   //Initialize display by providing the display type and its I2C address.
@@ -25,6 +60,7 @@ void setup()
   display.setTextSize(1);
   display.setTextColor(WHITE);
 }
+
 void loop()
 {
   byte poti_threshold = (analogRead(A0)/4);
