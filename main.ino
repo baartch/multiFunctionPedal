@@ -7,20 +7,23 @@
 
 
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-
-#define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
-extern Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
 
 #define MODE 1 // 0 = COMPRESSOR / 1 = TUNER
+
+
+float edgeL = 0; //set the lower edge of the spectrum
+float edgeH = 0; //set the higher edge of the spectrum
+float f;
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma region DISPLAY
 // DISPLAY 
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
 
+#define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
+extern Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #pragma endregion
 
 
@@ -35,11 +38,6 @@ void setup()
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
 }
-
-
-
-
-
 
 
 
@@ -68,7 +66,7 @@ void loop()
     if ((micros() - startzeit) >= messzeit)
     {
       display.clearDisplay();
-      float f = timer; //Datentyp 'float', wegen untenstehender Division
+      f = timer; //Datentyp 'float', wegen untenstehender Division
       f = (messzeit*4)/f; //Aus Periodendauer Frequenz berechnen
       detachInterrupt(digitalPinToInterrupt(2));
       ///////////////////////////////////////////////
@@ -77,14 +75,12 @@ void loop()
       display.setCursor(0, 20);
       
 
-      float edgeL = 0; //set the lower edge of the spectrum
-      float edgeH = 0; //set the higher edge of the spectrum
       for (int i=1; i < (sizeof(freq)/sizeof(freq[0]))-1; i++){
         // Mitte zwischen aktuellem Ton und unterem und oberem berechnen, und alls Abgrenzung setzen
         edgeL = freq[i][0]-((freq[i][0]-freq[i-1][0])/2);
         edgeH = freq[i][0]+((freq[i+1][0]-freq[i][0])/2);
         if ((f > edgeL) and (f < edgeH)) {
-
+          drawTunerPin();
           display.print(notes[(int)freq[i][1]]);
         }
       }
@@ -101,6 +97,13 @@ void loop()
 }
 
 
+
+void drawTunerPin (){
+  float range = edgeH - edgeL;
+  float frqInRng = f - edgeL;
+  int coordX = frqInRng * 128 / range;
+  display.drawFastVLine(coordX, 20, 30, SSD1306_WHITE);
+}
 
 
 void drawCompSettings (byte thresh, float ratio) {
