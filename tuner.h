@@ -7,8 +7,10 @@ extern unsigned long timerOld;
 extern unsigned long startzeit;
 extern unsigned long messzeit;
 
-extern void tuner();
 extern void Messung();
+
+extern char notes[7];
+extern float freq[27][2];
 
 
 #endif /* TUNER_H */

@@ -69,12 +69,27 @@ void loop()
     {
       display.clearDisplay();
       float f = timer; //Datentyp 'float', wegen untenstehender Division
-      f = 1000000/f; //Aus Periodendauer Frequenz berechnen
-      detachInterrupt(0);
+      f = (messzeit*4)/f; //Aus Periodendauer Frequenz berechnen
+      detachInterrupt(digitalPinToInterrupt(2));
+      ///////////////////////////////////////////////
       display.setCursor(0, 10);
       display.print(f);
-      display.display();
+      display.setCursor(0, 20);
+      
 
+      float edgeL = 0; //set the lower edge of the spectrum
+      float edgeH = 0; //set the higher edge of the spectrum
+      for (int i=1; i < (sizeof(freq)/sizeof(freq[0]))-1; i++){
+        // Mitte zwischen aktuellem Ton und unterem und oberem berechnen, und alls Abgrenzung setzen
+        edgeL = freq[i][0]-((freq[i][0]-freq[i-1][0])/2);
+        edgeH = freq[i][0]+((freq[i+1][0]-freq[i][0])/2);
+        if ((f > edgeL) and (f < edgeH)) {
+
+          display.print(notes[(int)freq[i][1]]);
+        }
+      }
+      display.display();
+      ///////////////////////////////////////////////
       attachInterrupt(digitalPinToInterrupt(2), Messung, RISING);
       zaehler = 0; //Frequenzzähler zurücksetzen
       startzeit = micros(); //Zeitpunkt der letzten Ausgabe speichern
@@ -84,6 +99,8 @@ void loop()
 
 
 }
+
+
 
 
 void drawCompSettings (byte thresh, float ratio) {
