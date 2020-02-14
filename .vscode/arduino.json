@@ -3,5 +3,5 @@
     "configuration": "cpu=atmega328",
     "sketch": "main.ino",
     "port": "COM4",
-    "programmer": "AVR ISP"
+    "output": "../ArduinoOutput"
 }
