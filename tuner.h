@@ -7,11 +7,11 @@ extern unsigned long timerOld;
 extern unsigned long startzeit;
 extern unsigned long messzeit;
 
-extern void Messung();
+extern void  Messung();
+extern float getAvrgFreq(float);
 
-extern char notes[7];
+extern char  notes[7];
 extern float freq[27][2];
-
 
 #endif /* TUNER_H */
 

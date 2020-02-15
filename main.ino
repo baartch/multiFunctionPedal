@@ -70,8 +70,9 @@ void loop()
       f = (messzeit*4)/f; //Aus Periodendauer Frequenz berechnen
       detachInterrupt(digitalPinToInterrupt(2));
       ///////////////////////////////////////////////
+      float avrgFreq = getAvrgFreq(f);
       display.setCursor(0, 10);
-      display.print(f);
+      display.print(avrgFreq);
       display.setCursor(0, 20);
       
 

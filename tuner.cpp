@@ -1,11 +1,12 @@
 #include "tuner.h"
 #include "Arduino.h"
 
-int zaehler;
-unsigned long timer;
-unsigned long timerOld;
+
+int zaehler,zAvrg=0;
+unsigned long timer, timerOld;
 unsigned long startzeit;
 unsigned long messzeit = 1000000/4;
+float frqColl[5];
 
 //                0   1   2   3   4   5   6
 char notes[7] = {'C','D','E','F','G','A','B'};
@@ -45,4 +46,18 @@ void Messung()
     zaehler++;
     timer = micros() - timerOld;
     timerOld = micros();
+}
+
+
+float getAvrgFreq(float fA){
+    if(zAvrg>=5)zAvrg=0; //Zähler zurücksetzen
+    if(isinf(fA))fA=0; //um fehlerhafte Kalkulation zu vermeiden
+    frqColl[zAvrg] = fA;
+    zAvrg++;
+
+    float avrg=0.00f;
+    for (int i=0; i < 5; i++){
+        avrg = avrg + frqColl[i];
+    }
+    return (avrg/5);
 }
