@@ -82,7 +82,7 @@ void loop()
         edgeH = freq[i][0]+((freq[i+1][0]-freq[i][0])/2);
         if ((f > edgeL) and (f < edgeH)) {
           drawTunerPin();
-          display.print(notes[(int)freq[i][1]]);
+          //display.print(notes[(int)freq[i][1]][0]);
         }
       }
       display.display();

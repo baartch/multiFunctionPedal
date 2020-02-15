@@ -10,8 +10,8 @@ extern unsigned long messzeit;
 extern void  Messung();
 extern float getAvrgFreq(float);
 
-extern char  notes[7];
-extern float freq[27][2];
+extern char  notes[12][2];
+extern float freq[61][2];
 
 #endif /* TUNER_H */
 
