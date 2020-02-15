@@ -9,9 +9,12 @@ extern unsigned long messzeit;
 
 extern void  Messung();
 extern float getAvrgFreq(float);
+extern float getEdgeL(int);
+extern float getEdgeH(int);
+extern int   getFreqArrSize();
+extern char  getNote(int);
+extern float getRefFreq(int);
 
-extern char  notes[12][2];
-extern float freq[61][2];
 
 #endif /* TUNER_H */
 

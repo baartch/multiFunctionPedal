@@ -76,18 +76,19 @@ void loop()
       display.setCursor(0, 20);
       
 
-      for (int i=1; i < (sizeof(freq)/sizeof(freq[0]))-1; i++){
+      for (int i=1; i < (getFreqArrSize())-1; i++){
         // Mitte zwischen aktuellem Ton und unterem und oberem berechnen, und alls Abgrenzung setzen
-        edgeL = freq[i][0]-((freq[i][0]-freq[i-1][0])/2);
-        edgeH = freq[i][0]+((freq[i+1][0]-freq[i][0])/2);
-        if ((f > edgeL) and (f < edgeH)) {
-          drawTunerPin();
-          //display.print(notes[(int)freq[i][1]][0]);
+        edgeL = getEdgeL(i);
+        edgeH = getEdgeH(i);
+        if ((avrgFreq > edgeL) and (avrgFreq < edgeH)) {
+          Serial.println(freeMemory());
+          drawTunerPin(avrgFreq,getRefFreq(i));
+          display.print(getNote(i));
         }
       }
       display.display();
       ///////////////////////////////////////////////
-      attachInterrupt(digitalPinToInterrupt(2), Messung, RISING);
+      attachInterrupt(digitalPinToInterrupt(2), Messung, RISING); //Digital Pin 2
       zaehler = 0; //Frequenzzähler zurücksetzen
       startzeit = micros(); //Zeitpunkt der letzten Ausgabe speichern
     }
@@ -99,10 +100,10 @@ void loop()
 
 
 
-void drawTunerPin (){
-  float range = edgeH - edgeL;
-  float frqInRng = f - edgeL;
-  int coordX = frqInRng * 128 / range;
+void drawTunerPin (float frq, float ref){
+  float range = ((edgeH-ref)+(ref-edgeL))+abs((edgeH-ref)-(ref-edgeL));
+  float frqInRng = frq - (ref-(range/2));
+  int coordX = frqInRng * SCREEN_WIDTH / range;
   display.drawFastVLine(coordX, 20, 30, SSD1306_WHITE);
 }
 
@@ -131,4 +132,24 @@ void drawCompSettings (byte thresh, float ratio) {
   display.setCursor(SCREEN_WIDTH/2, 20);
   display.print(ratio);
   display.fillTriangle(threshX+1 , threshY-1, SCREEN_WIDTH, (threshY-((float)threshY/ratio)), SCREEN_WIDTH, threshY-1, SSD1306_WHITE);
+}
+
+
+
+#ifdef __arm__
+// should use uinstd.h to define sbrk but Due causes a conflict
+extern "C" char* sbrk(int incr);
+#else  // __ARM__
+extern char *__brkval;
+#endif  // __arm__
+
+int freeMemory() {
+  char top;
+#ifdef __arm__
+  return &top - reinterpret_cast<char*>(sbrk(0));
+#elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
+  return &top - __brkval;
+#else  // __arm__
+  return __brkval ? &top - __brkval : &top - __malloc_heap_start;
+#endif  // __arm__
 }
