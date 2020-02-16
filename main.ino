@@ -10,11 +10,18 @@
 
 #define MODE 1 // 0 = COMPRESSOR / 1 = TUNER
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma region TUNER
+// TUNER
 float edgeL = 0; //set the lower edge of the spectrum
 float edgeH = 0; //set the higher edge of the spectrum
 float f;
+#pragma endregion
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma region COMPRESSOR
+// COMPRESSOR
+#pragma endregion
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma region DISPLAY
@@ -65,15 +72,14 @@ void loop()
   if (MODE == 1){
     if ((micros() - startzeit) >= messzeit)
     {
-      display.clearDisplay();
+      initTuner();
       f = timer; //Datentyp 'float', wegen untenstehender Division
       f = (messzeit*4)/f; //Aus Periodendauer Frequenz berechnen
       detachInterrupt(digitalPinToInterrupt(2));
       ///////////////////////////////////////////////
       float avrgFreq = getAvrgFreq(f);
-      display.setCursor(0, 10);
+      display.setCursor(1,1);
       display.print(avrgFreq);
-      display.setCursor(0, 20);
       
 
       for (int i=1; i < (getFreqArrSize())-1; i++){
@@ -83,7 +89,14 @@ void loop()
         if ((avrgFreq > edgeL) and (avrgFreq < edgeH)) {
           Serial.println(freeMemory());
           drawTunerPin(avrgFreq,getRefFreq(i));
+          
+          display.setCursor((SCREEN_WIDTH-36),1);
+          display.print(getRefFreq(i));
+
+          display.setCursor(59, 1);
+          display.setTextSize(2);
           display.print(getNote(i));
+          //display.drawChar
         }
       }
       display.display();
@@ -101,11 +114,22 @@ void loop()
 
 
 void drawTunerPin (float frq, float ref){
+  //calculate the total freq range on the display
+  //take the higher distance to the next note
   float range = ((edgeH-ref)+(ref-edgeL))+abs((edgeH-ref)-(ref-edgeL));
   float frqInRng = frq - (ref-(range/2));
   int coordX = frqInRng * SCREEN_WIDTH / range;
   display.drawFastVLine(coordX, 20, 30, SSD1306_WHITE);
 }
+
+void initTuner(){
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.drawFastHLine(0,17,SCREEN_WIDTH,SSD1306_WHITE); //obere horizontale linie
+  display.fillTriangle(0, SCREEN_HEIGHT-1, (SCREEN_WIDTH/2)-1, SCREEN_HEIGHT-10, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, SSD1306_WHITE);
+
+}
+
 
 
 void drawCompSettings (byte thresh, float ratio) {
