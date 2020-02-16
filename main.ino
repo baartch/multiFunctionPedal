@@ -46,8 +46,6 @@ void setup()
   display.setTextColor(SSD1306_WHITE);
 }
 
-
-
 void loop()
 {
   //Clear previous image.
