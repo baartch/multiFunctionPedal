@@ -15,7 +15,7 @@
 // TUNER
 float edgeL = 0; //set the lower edge of the spectrum
 float edgeH = 0; //set the higher edge of the spectrum
-float f;
+float f,avrgFreq;
 #pragma endregion
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -75,59 +75,61 @@ void loop()
       initTuner();
       f = timer; //Datentyp 'float', wegen untenstehender Division
       f = (messzeit*4)/f; //Aus Periodendauer Frequenz berechnen
-      detachInterrupt(digitalPinToInterrupt(2));
-      ///////////////////////////////////////////////
-      float avrgFreq = getAvrgFreq(f);
-      display.setCursor(1,1);
-      display.print(avrgFreq);
       
+      detachInterrupt(digitalPinToInterrupt(2));
+      Serial.println(f);
+      if (f > 5.0 && f<440.0){
+        ///////////////////////////////////////////////
+        avrgFreq = getAvrgFreq(f);
+        display.setCursor(0,1);
+        display.print(avrgFreq); // print current frequency
 
-      for (int i=1; i < (getFreqArrSize())-1; i++){
-        // Mitte zwischen aktuellem Ton und unterem und oberem berechnen, und alls Abgrenzung setzen
-        edgeL = getEdgeL(i);
-        edgeH = getEdgeH(i);
-        if ((avrgFreq > edgeL) and (avrgFreq < edgeH)) {
-          Serial.println(freeMemory());
-          drawTunerPin(avrgFreq,getRefFreq(i));
-          
-          display.setCursor((SCREEN_WIDTH-36),1);
-          display.print(getRefFreq(i));
-
-          display.setCursor(59, 1);
-          display.setTextSize(2);
-          display.print(getNote(i));
-          //display.drawChar
+        //loop through all known frequencies
+        for (int i=1; i < (getFreqArrSize())-1; i++){
+          // calculate half of the distance to next lower and the next higher note
+          edgeL = getEdgeL(i);
+          edgeH = getEdgeH(i);
+          if ((avrgFreq > edgeL) && (avrgFreq < edgeH)) {
+            drawTunerPin(avrgFreq,i);
+            drawNoteInfo(i);
+          }
         }
+        ///////////////////////////////////////////////
       }
       display.display();
-      ///////////////////////////////////////////////
       attachInterrupt(digitalPinToInterrupt(2), Messung, RISING); //Digital Pin 2
       zaehler = 0; //Frequenzzähler zurücksetzen
       startzeit = micros(); //Zeitpunkt der letzten Ausgabe speichern
     }
   }
-
-
-
 }
 
-
-
-void drawTunerPin (float frq, float ref){
-  //calculate the total freq range on the display
-  //take the higher distance to the next note
-  float range = ((edgeH-ref)+(ref-edgeL))+abs((edgeH-ref)-(ref-edgeL));
-  float frqInRng = frq - (ref-(range/2));
-  int coordX = frqInRng * SCREEN_WIDTH / range;
-  display.drawFastVLine(coordX, 20, 30, SSD1306_WHITE);
-}
 
 void initTuner(){
   display.clearDisplay();
   display.setTextSize(1);
-  display.drawFastHLine(0,17,SCREEN_WIDTH,SSD1306_WHITE); //obere horizontale linie
-  display.fillTriangle(0, SCREEN_HEIGHT-1, (SCREEN_WIDTH/2)-1, SCREEN_HEIGHT-10, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, SSD1306_WHITE);
+  display.drawFastHLine(0,18,SCREEN_WIDTH,SSD1306_WHITE); //obere horizontale linie
+  display.fillTriangle(0, SCREEN_HEIGHT-1, (SCREEN_WIDTH/2)-1, SCREEN_HEIGHT-9, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, SSD1306_WHITE);
+}
 
+void drawTunerPin (float frq, int element){
+  //calculate the total freq range on the display
+  //take the higher distance to the next note
+  float ref = getRefFreq(element);
+  float range = ((edgeH-ref)+(ref-edgeL))+abs((edgeH-ref)-(ref-edgeL));
+  float frqInRng = frq - (ref-(range/2));
+  int coordX = frqInRng * SCREEN_WIDTH / range;
+  display.fillRect(coordX-1, 23, 3, 28, SSD1306_WHITE);
+}
+
+void drawNoteInfo(int element){
+  float refFreq = getRefFreq(element);
+  if (refFreq > 100) display.setCursor((SCREEN_WIDTH-36),1); // 5 digits and .
+  else display.setCursor((SCREEN_WIDTH-30),1);               // 4 digits and .
+  display.print(refFreq);
+  display.setCursor(59, 1);
+  display.setTextSize(2);
+  display.print(getNote(element));
 }
 
 
