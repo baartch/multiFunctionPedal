@@ -61,3 +61,22 @@ float getAvrgFreq(float fA){
     }
     return (avrg/5);
 }
+
+float getEdgeL(int i){
+    return (freq[i][0]-((freq[i][0]-freq[i-1][0])/2));
+}
+float getEdgeH(int i){
+    return (freq[i][0]+((freq[i+1][0]-freq[i][0])/2));
+}
+
+int getFreqArrSize(){
+    return (sizeof(freq)/sizeof(freq[0]));
+}
+
+char getNote(int i){
+    return notes[(int)freq[i][1]];
+}
+
+float getRefFreq(int i){
+    return freq[i][0];
+}

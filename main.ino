@@ -10,11 +10,18 @@
 
 #define MODE 1 // 0 = COMPRESSOR / 1 = TUNER
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma region TUNER
+// TUNER
 float edgeL = 0; //set the lower edge of the spectrum
 float edgeH = 0; //set the higher edge of the spectrum
-float f;
+float f,avrgFreq;
+#pragma endregion
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma region COMPRESSOR
+// COMPRESSOR
+#pragma endregion
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma region DISPLAY
@@ -65,46 +72,66 @@ void loop()
   if (MODE == 1){
     if ((micros() - startzeit) >= messzeit)
     {
-      display.clearDisplay();
+      initTuner();
       f = timer; //Datentyp 'float', wegen untenstehender Division
       f = (messzeit*4)/f; //Aus Periodendauer Frequenz berechnen
-      detachInterrupt(digitalPinToInterrupt(2));
-      ///////////////////////////////////////////////
-      float avrgFreq = getAvrgFreq(f);
-      display.setCursor(0, 10);
-      display.print(avrgFreq);
-      display.setCursor(0, 20);
       
+      detachInterrupt(digitalPinToInterrupt(2));
+      Serial.println(f);
+      if (f > 5.0 && f<440.0){
+        ///////////////////////////////////////////////
+        avrgFreq = getAvrgFreq(f);
+        display.setCursor(0,1);
+        display.print(avrgFreq); // print current frequency
 
-      for (int i=1; i < (sizeof(freq)/sizeof(freq[0]))-1; i++){
-        // Mitte zwischen aktuellem Ton und unterem und oberem berechnen, und alls Abgrenzung setzen
-        edgeL = freq[i][0]-((freq[i][0]-freq[i-1][0])/2);
-        edgeH = freq[i][0]+((freq[i+1][0]-freq[i][0])/2);
-        if ((f > edgeL) and (f < edgeH)) {
-          drawTunerPin();
-          display.print(notes[(int)freq[i][1]]);
+        //loop through all known frequencies
+        for (int i=1; i < (getFreqArrSize())-1; i++){
+          // calculate half of the distance to next lower and the next higher note
+          edgeL = getEdgeL(i);
+          edgeH = getEdgeH(i);
+          if ((avrgFreq > edgeL) && (avrgFreq < edgeH)) {
+            drawTunerPin(avrgFreq,i);
+            drawNoteInfo(i);
+          }
         }
+        ///////////////////////////////////////////////
       }
       display.display();
-      ///////////////////////////////////////////////
-      attachInterrupt(digitalPinToInterrupt(2), Messung, RISING);
+      attachInterrupt(digitalPinToInterrupt(2), Messung, RISING); //Digital Pin 2
       zaehler = 0; //Frequenzzähler zurücksetzen
       startzeit = micros(); //Zeitpunkt der letzten Ausgabe speichern
     }
   }
-
-
-
 }
 
 
-
-void drawTunerPin (){
-  float range = edgeH - edgeL;
-  float frqInRng = f - edgeL;
-  int coordX = frqInRng * 128 / range;
-  display.drawFastVLine(coordX, 20, 30, SSD1306_WHITE);
+void initTuner(){
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.drawFastHLine(0,18,SCREEN_WIDTH,SSD1306_WHITE); //obere horizontale linie
+  display.fillTriangle(0, SCREEN_HEIGHT-1, (SCREEN_WIDTH/2)-1, SCREEN_HEIGHT-9, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, SSD1306_WHITE);
 }
+
+void drawTunerPin (float frq, int element){
+  //calculate the total freq range on the display
+  //take the higher distance to the next note
+  float ref = getRefFreq(element);
+  float range = ((edgeH-ref)+(ref-edgeL))+abs((edgeH-ref)-(ref-edgeL));
+  float frqInRng = frq - (ref-(range/2));
+  int coordX = frqInRng * SCREEN_WIDTH / range;
+  display.fillRect(coordX-1, 23, 3, 28, SSD1306_WHITE);
+}
+
+void drawNoteInfo(int element){
+  float refFreq = getRefFreq(element);
+  if (refFreq > 100) display.setCursor((SCREEN_WIDTH-36),1); // 5 digits and .
+  else display.setCursor((SCREEN_WIDTH-30),1);               // 4 digits and .
+  display.print(refFreq);
+  display.setCursor(59, 1);
+  display.setTextSize(2);
+  display.print(getNote(element));
+}
+
 
 
 void drawCompSettings (byte thresh, float ratio) {
@@ -131,4 +158,24 @@ void drawCompSettings (byte thresh, float ratio) {
   display.setCursor(SCREEN_WIDTH/2, 20);
   display.print(ratio);
   display.fillTriangle(threshX+1 , threshY-1, SCREEN_WIDTH, (threshY-((float)threshY/ratio)), SCREEN_WIDTH, threshY-1, SSD1306_WHITE);
+}
+
+
+
+#ifdef __arm__
+// should use uinstd.h to define sbrk but Due causes a conflict
+extern "C" char* sbrk(int incr);
+#else  // __ARM__
+extern char *__brkval;
+#endif  // __arm__
+
+int freeMemory() {
+  char top;
+#ifdef __arm__
+  return &top - reinterpret_cast<char*>(sbrk(0));
+#elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
+  return &top - __brkval;
+#else  // __arm__
+  return __brkval ? &top - __brkval : &top - __malloc_heap_start;
+#endif  // __arm__
 }
